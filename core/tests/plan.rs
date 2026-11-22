@@ -13,7 +13,7 @@ fn data() -> Rc<Data> {
 }
 
 fn want(s: &str) -> Want {
-    Want { alts: vec![s.to_string()], fam: vec![], min: None }
+    Want { alts: vec![s.to_string()], fam: vec![], min: None, must: false }
 }
 
 fn query(cost_p: u64, maxp: u32) -> Query {

@@ -42,6 +42,9 @@ pub struct Want {
     /// optional minimum value of the matching line
     #[serde(default)]
     pub min: Option<f64>,
+    /// the stat must roll on the item itself: a recipe lacking it is never one short (the Mystic may not add it)
+    #[serde(default)]
+    pub must: bool,
 }
 
 fn d_true() -> bool {
@@ -651,7 +654,7 @@ impl Search {
         if is_full && finisher != Some(holder) {
             cost += self.q.cost_switch;
         }
-        let mut is_near = qual_ok && nw > 0 && matched.len() + 1 == self.min_match;
+        let mut is_near = qual_ok && nw > 0 && matched.len() + 1 == self.min_match && (0..nw).all(|w| matched.contains(&w) || !self.q.wants[w].must);
         // a recipe one stat short: the spare lines (not wanted, not the weapon damage range) the Mystic may legally swap for the
         // missing stat, of the same kind, at the first hero whose class can roll it: the one holding the item, then the others
         // allowed, a hand-off costing `cost_switch` like any other. With none, it is no recipe one short at all, so it cannot end

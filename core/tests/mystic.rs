@@ -75,3 +75,23 @@ fn mystic_finish_uses_the_allowed_heroes() {
     assert!(full(&[]).is_none(), "a Necromancer enchanting Lightning damage");
     assert_eq!(full(&[2]).expect("the 135 route with a Wizard").cost, 13500 + 100);
 }
+
+/// A wanted stat marked `must` is never left to the Mystic: no recipe one short lacks it, and such a recipe does not end the
+/// search (`end_on_near`) ahead of the full ones.
+#[test]
+fn a_must_roll_stat_is_never_the_one_short() {
+    let q = |must: Option<usize>| {
+        let wants: Vec<_> = ["Str", "Vit", "ResistAll"].iter().enumerate().map(|(i, f)| serde_json::json!({"fam": [f], "must": Some(i) == must})).collect();
+        run(serde_json::json!({
+            "class": 5, "slots": ["Belt"], "items": [3768352170u32], "season": 40, "quality": "primal", "max_primalize": 2, "maxsteps": 1000,
+            "cost_h": 100, "cost_r": 500, "cost_p": 2500, "cost_c": 75, "top": 4, "min_match": 3, "end_on_near": true, "wants": wants
+        }))
+    };
+    let free = q(None);
+    let lacking = (0..3).find(|w| free.near.iter().any(|h| !h.matched.contains(w))).expect("a recipe one short");
+    let must = q(Some(lacking));
+    assert!(must.near.iter().all(|h| h.matched.contains(&lacking)), "a recipe one short lacks the must-roll stat");
+    // the plain search ends on that recipe; marked, the search goes on past its cost
+    let short = free.near.iter().filter(|h| !h.matched.contains(&lacking)).map(|h| h.cost).min().unwrap();
+    assert!(free.status.cost_reached <= short && must.status.cost_reached > short, "{} {} {}", free.status.cost_reached, must.status.cost_reached, short);
+}
